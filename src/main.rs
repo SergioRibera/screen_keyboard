@@ -16,7 +16,7 @@ use dirs::config_dir;
 use fltk::enums::Mode;
 // use fltk::frame::Frame;
 // use fltk::group::Pack;
-use fltk::{app::*, prelude::*, window::Window};
+use fltk::{app::*, prelude::*, window::Window, enums::Event};
 
 mod structs;
 mod ui;
@@ -69,6 +69,7 @@ fn main () {
         let _but = FlatButton::new((i * 60) + margin, 0 + margin,
                                   50, 50, "A",
                                   MAIN_DATA.styleKeyboard.keyColor.as_str(),
+                                  MAIN_DATA.styleKeyboard.keyBorderColor.as_str(),
                                   MAIN_DATA.styleKeyboard.keyPressedColor.as_str());
         println!("i: {}", i);
     }
@@ -84,11 +85,50 @@ fn main () {
     wind.end();
     wind.show();
     wind.set_opacity(MAIN_DATA.opacity);
+    wind.set_border(false); // Remove decorations
     background(col.r, col.g, col.b);
-    wind.handle(|widget, ev| {
+    // wind.show_with_args(&[""]);
+    /*
+    int MyWindow::handle(int e) {
+        static int xoff = 0, yoff = 0;
+        int ret = Fl_Double_Window::handle(e);
+        switch ( e ) {
+            // DOWNCLICK IN WINDOW CREATES CURSOR OFFSETS
+            case FL_PUSH:
+                xoff = x() - Fl::event_x_root();
+                yoff = y() - Fl::event_y_root();
+                return(1);
+
+            case FL_DRAG:
+                // DRAG THE WINDOW AROUND THE SCREEN
+                position(xoff + Fl::event_x_root(), yoff + Fl::event_y_root());
+                redraw();
+                return(1);
+
+            case FL_RELEASE:
+                return(1);
+        }
+        return(ret);
+    }
+    */
+    wind.handle(move |w, ev| {
+        let mut xoff = 0;
+        let mut yoff = 0;
+        let xhalf = w.pixel_w() / 2;
+        let yhalf = w.pixel_h() / 2;
         match ev {
-            fltk::enums::Event::Push => {
-                println!("Pushed!");
+            Event::Push => {
+                if event_mouse_button() == fltk::app::MouseButton::Left {
+                    xoff = w.x() - fltk::app::event_x_root();
+                    yoff = w.y() - fltk::app::event_y_root();
+                }
+                true
+            },
+            Event::Drag => {
+                if event_mouse_button() == fltk::app::MouseButton::Left {
+                    w.set_pos(xoff + fltk::app::event_x_root() - xhalf, yoff + fltk::app::event_y_root() - yhalf);
+                    app.redraw();
+                }
                 true
             },
             _ => false

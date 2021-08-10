@@ -10,17 +10,20 @@ use css_color_parser::Color as CssColor;
 pub struct FlatButton {
     pub wid: Widget,
     pub color: Color,
-    pub pressedColor: Color,
+    pub border_color: Color,
+    pub pressed_color: Color,
 }
 
 impl FlatButton {
-    pub fn new(x: i32, y: i32, w: i32, h: i32, label: &'static str, color: &'static str, pressedColor: &'static str) -> FlatButton {
+    pub fn new(x: i32, y: i32, w: i32, h: i32, label: &'static str, color: &'static str, border_color: &'static str, pressed_color: &'static str) -> FlatButton {
         let _color = color.parse::<CssColor>().unwrap();
-        let _press_color = pressedColor.parse::<CssColor>().unwrap();
+        let _press_color = pressed_color.parse::<CssColor>().unwrap();
+        let _border_color = border_color.parse::<CssColor>().unwrap();
         let mut x = FlatButton {
             wid: Widget::new(x, y, w, h, label),
             color: Color::from_rgb(_color.r, _color.g, _color.b),
-            pressedColor: Color::from_rgb(_press_color.r, _press_color.g, _press_color.b),
+            border_color: Color::from_rgb(_border_color.r, _border_color.g, _border_color.b),
+            pressed_color: Color::from_rgb(_press_color.r, _press_color.g, _press_color.b),
         };
         x.draw();
         x.handle();
@@ -30,6 +33,7 @@ impl FlatButton {
     // Overrides the draw function
     fn draw(&mut self) {
         let color = self.color;
+        let border_c = self.border_color;
         self.wid.draw(move |b| {
             draw::draw_box(
                 FrameType::FlatBox,
@@ -40,10 +44,10 @@ impl FlatButton {
                 color
             );
             draw::draw_box(
-                FrameType::BorderBox,
-                b.w(), b.y(),
+                FrameType::BorderFrame,
+                b.w() - b.width() + 2, b.y(),
                 b.width(), b.height(),
-                Color::Black);
+                border_c);
             draw::set_draw_color(Color::White);
             draw::set_font(Font::Courier, 24);
             draw::draw_text2(
