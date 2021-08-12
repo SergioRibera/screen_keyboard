@@ -16,13 +16,12 @@ use dirs::config_dir;
 use fltk::enums::Mode;
 // use fltk::frame::Frame;
 // use fltk::group::Pack;
-use fltk::{app::*, prelude::*, window::Window, enums::Event};
+use fltk::{app::*, prelude::*, window::Window, enums::*, frame::*};
 
 mod structs;
 mod ui;
 use structs::*;
 use ui::*;
-
 
 fn read_user_from_file<P: AsRef<Path>>(p: P) -> Result<DataLoad, Box<dyn Error>> {
     let path = config_dir().unwrap().join("SergioRibera").join(p.as_ref());
@@ -85,32 +84,14 @@ fn main () {
     wind.end();
     wind.show();
     wind.set_opacity(MAIN_DATA.opacity);
+    wind.make_modal(true);
     wind.set_border(false); // Remove decorations
+    wind.set_tooltip("Left click and drag to move window, rigth click to config");
     background(col.r, col.g, col.b);
-    // wind.show_with_args(&[""]);
-    /*
-    int MyWindow::handle(int e) {
-        static int xoff = 0, yoff = 0;
-        int ret = Fl_Double_Window::handle(e);
-        switch ( e ) {
-            // DOWNCLICK IN WINDOW CREATES CURSOR OFFSETS
-            case FL_PUSH:
-                xoff = x() - Fl::event_x_root();
-                yoff = y() - Fl::event_y_root();
-                return(1);
+    fltk::misc::Tooltip::set_color(Color::White);
+    fltk::misc::Tooltip::set_wrap_width(0);
+    fltk::misc::Tooltip::set_text_color(Color::Black);
 
-            case FL_DRAG:
-                // DRAG THE WINDOW AROUND THE SCREEN
-                position(xoff + Fl::event_x_root(), yoff + Fl::event_y_root());
-                redraw();
-                return(1);
-
-            case FL_RELEASE:
-                return(1);
-        }
-        return(ret);
-    }
-    */
     wind.handle(move |w, ev| {
         let mut xoff = 0;
         let mut yoff = 0;
@@ -121,6 +102,15 @@ fn main () {
                 if event_mouse_button() == fltk::app::MouseButton::Left {
                     xoff = w.x() - fltk::app::event_x_root();
                     yoff = w.y() - fltk::app::event_y_root();
+                } else if event_mouse_button() == MouseButton::Right {
+                    let mut adjust_window = Window::default()
+                        .with_label("Settings")
+                        .with_size(200, 400)
+                        .center_screen();
+                    adjust_window.set_border(true);
+                    adjust_window.make_modal(true);
+                    adjust_window.end();
+                    adjust_window.show();
                 }
                 true
             },

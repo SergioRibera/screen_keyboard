@@ -9,6 +9,6 @@ authors = [ "SergioRibera" ]
 dirs = "3.0"
 css-color-parser = "*"
 lazy_static = "1.4.0"
-fltk = { version = "^1.1", git = "https://github.com/fltk-rs/fltk-rs" }
+fltk = { version = "^1.1", git = "https://github.com/fltk-rs/fltk-rs", features = ["fltk-bundled"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
