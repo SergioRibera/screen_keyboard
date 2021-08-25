@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use indexmap::IndexMap;
 
 use serde::{Deserialize, Serialize};
 
@@ -13,31 +14,47 @@ pub struct StyleKeyboard {
     #[serde(default)]
     pub keyBorderColor: String,
     #[serde(default)]
-    pub keyBorderRadius: u32,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct LayerSplit {
+    pub keyBorderRadius: f32,
     #[serde(default)]
-    pub left: HashMap<u32, String>,
-    #[serde(default)]
-    pub right: HashMap<u32, String>,
+    pub keySize: f32,
 }
-
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Layer {
+    #[serde(default)]
+    pub index: u16,
+    #[serde(with = "indexmap::serde_seq")]
+    pub content: IndexMap<u16, String>,
+}
+#[derive(Serialize, Deserialize, Clone)]
 pub struct DataLoad {
     #[serde(default)]
     pub name: String,
     #[serde(default)]
+    pub vendorID: u16,
+    #[serde(default)]
+    pub productID: u16,
+    #[serde(default)]
     pub styleKeyboard: StyleKeyboard,
     #[serde(default)]
-    pub opacity: f64,
+    pub opacity: f32,
     #[serde(default)]
-    pub layers: HashMap<u32, String>,
+    pub layers: Vec<Layer>,
     #[serde(default)]
-    pub split: Vec<LayerSplit>
+    pub split: bool,
+    #[serde(default)]
+    pub columns: u32,
+    #[serde(default)]
+    pub rows: u32
 }
 
+impl Default for Layer {
+    fn default() -> Self {
+        Layer {
+            index: 0,
+            content: IndexMap::new()
+        }
+    }
+}
 impl Default for StyleKeyboard {
     fn default() -> Self {
         StyleKeyboard {
@@ -45,15 +62,8 @@ impl Default for StyleKeyboard {
             keyColor: "#ccc".to_string(),
             keyPressedColor: "#919191".to_string(),
             keyBorderColor: "#414141".to_string(),
-            keyBorderRadius: 5,
-        }
-    }
-}
-impl Default for LayerSplit {
-    fn default() -> Self {
-        LayerSplit {
-            left: HashMap::new(),
-            right: HashMap::new(),
+            keyBorderRadius: 5.0,
+            keySize: 10.0
         }
     }
 }
@@ -61,10 +71,14 @@ impl Default for DataLoad {
     fn default() -> Self {
         DataLoad {
             name: "Unknown".to_string(),
+            productID: 0,
+            vendorID: 0,
             styleKeyboard: StyleKeyboard::default(),
             opacity: 0.6,
-            layers: HashMap::new(),
-            split: Vec::new(),
+            layers: Vec::new(),
+            split: false,
+            rows: 7,
+            columns: 70
         }
     }
 }
