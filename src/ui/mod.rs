@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 pub mod styles;
 
 use crate::utils::read_user_from_file;
@@ -33,17 +35,17 @@ impl Application for MainApp {
         let data: DataLoad = read_user_from_file("screen_keyboard.json").unwrap();
         let margin: f32 = 2.0;
         let width_app = if data.split {
-                ((data.styleKeyboard.keySize * margin) as u32 * data.columns) + (2.0 * data.styleKeyboard.keySize * margin) as u32
+                ((data.style_keyboard.key_size * margin) as u32 * data.columns) + (2.0 * data.style_keyboard.key_size * margin) as u32
             } else {
-                (data.styleKeyboard.keySize * margin) as u32 * data.rows
+                (data.style_keyboard.key_size * margin) as u32 * data.rows
             };
-        let height_app = (data.styleKeyboard.keySize * margin) as u32;
+        let height_app = (data.style_keyboard.key_size * margin) as u32;
         // let color: CssColor = data.styleKeyboard.keyColor.parse::<CssColor>().unwrap();
         // let border_color: CssColor = data.styleKeyboard.keyBorderColor.parse::<CssColor>().unwrap();
         // let pressed_color: CssColor = data.styleKeyboard.keyPressedColor.parse::<CssColor>().unwrap();
         (MainApp {
             main_data: data.clone(),
-            key_size: data.styleKeyboard.keySize,
+            key_size: data.style_keyboard.key_size,
             width_app: width_app,
             height_app: height_app,
             margin: margin as u16,
@@ -60,8 +62,13 @@ impl Application for MainApp {
     fn title(&self) -> String {
         String::from("ScreenKeyboard")
     }
+    fn background_color(&self) -> Color {
+        Color::new(1.0, 1.0, 1.0, self.main_data.opacity)
+        // Read Bg Color from json
+    }
 
     fn update(&mut self, _message: Message, _clipboard: &mut Clipboard) -> Command<Self::Message> {
+        println!("Update");
         Command::none()
     }
 
@@ -102,7 +109,8 @@ impl Application for MainApp {
                     curr_col = 0;
                 }
                 if key != "KC_NO" {
-                    row = generate_key(row, key.clone(), self.main_font, self.color, self.main_data.styleKeyboard.keyBorderRadius);
+                    //row = generate_key(row, key.clone(), self.main_font, self.color, self.main_data.style_keyboard.key_border_radius);
+                    row = row.push(KeyWidget::new(key.clone(), self.main_font, self.color, self.main_data.style_keyboard.key_border_radius, self.main_data.style_keyboard.key_size));
                     println!("key: {:?}", key);
                 } else {
                     row = row.push(generate_space());
@@ -141,90 +149,84 @@ pub fn generate_space() -> Space {
     Space::new(Length::Fill, Length::Shrink)
 }
 
-// pub struct FlatButton {
-//     pub wid: Widget,
-//     pub color: Color,
-//     pub border_color: Color,
-//     pub pressed_color: Color,
-// }
-// 
-// impl FlatButton {
-//     pub fn new(x: i32, y: i32,
-//         w: i32, h: i32,
-//         label: &str,
-//         color: &str,
-//         border_color: &str,
-//         pressed_color: &str) -> FlatButton {
-//         let _color = color.parse::<CssColor>().unwrap();
-//         let _press_color = pressed_color.parse::<CssColor>().unwrap();
-//         let _border_color = border_color.parse::<CssColor>().unwrap();
-//         let mut x = FlatButton {
-//             wid: Widget::new(x, y, w, h, None).with_label(label),
-//             color: Color::from_rgb(_color.r, _color.g, _color.b),
-//             border_color: Color::from_rgb(_border_color.r, _border_color.g, _border_color.b),
-//             pressed_color: Color::from_rgb(_press_color.r, _press_color.g, _press_color.b),
-//         };
-//         x.draw();
-//         x.handle();
-//         x
-//     }
-// 
-//     // Overrides the draw function
-//     fn draw(&mut self) {
-//         let color = self.color;
-//         let border_c = self.border_color;
-//         self.wid.draw(move |b| {
-//             draw::draw_box(
-//                 FrameType::FlatBox,
-//                 b.x(),
-//                 b.y(),
-//                 b.width(),
-//                 b.height(),
-//                 color
-//             );
-//             draw::draw_box(
-//                 FrameType::BorderFrame,
-//                 b.w() - b.width() + 2, b.y(),
-//                 b.width(), b.height(),
-//                 border_c);
-//             draw::set_draw_color(Color::White);
-//             draw::set_font(Font::Courier, 24);
-//             draw::draw_text2(
-//                 &b.label(),
-//                 b.x(),
-//                 b.y(),
-//                 b.width(),
-//                 b.height(),
-//                 Align::Center,
-//             );
-//         });
-//     }
-// 
-//     // Overrides the handle function.
-//     // Notice the do_callback which allows the set_callback method to work
-//     fn handle(&mut self) {
-//         let mut wid = self.wid.clone();
-//         self.wid.handle(move |_, ev| match ev {
-//             Event::Push => {
-//                 wid.do_callback();
-//                 true
-//             }
-//             _ => false,
-//         });
-//     }
-// }
-// 
-// impl Deref for FlatButton {
-//     type Target = Widget;
-// 
-//     fn deref(&self) -> &Self::Target {
-//         &self.wid
-//     }
-// }
-// 
-// impl DerefMut for FlatButton {
-//     fn deref_mut(&mut self) -> &mut Self::Target {
-//         &mut self.wid
-//     }
-// }
-// 
+
+use iced_graphics::{Backend, Defaults, Primitive, Renderer};
+use iced_native::{
+    layout, mouse, Hasher, Layout,
+    Point, Rectangle, Size, Widget,
+};
+
+pub struct KeyWidget {
+    key: String,
+    font: Font,
+    txt_color: Color,
+    border_rad: f32,
+    size: f32
+}
+
+impl KeyWidget {
+    pub fn new(key: String, font: Font, txt_color: Color, border_rad: f32, size: f32) -> Self {
+        Self {
+            key: key,
+            font: font,
+            txt_color: txt_color,
+            border_rad: border_rad,
+            size: size
+        }
+    }
+}
+
+impl<Message, B> Widget<Message, Renderer<B>> for KeyWidget
+where B: Backend{
+    fn width(&self) -> iced::Length { Length::Fill }
+    fn height(&self) -> iced::Length { Length::Shrink }
+    fn layout(&self, _: &Renderer<B>, _: &iced_native::layout::Limits) -> iced_native::layout::Node {
+        layout::Node::new(Size::new(self.size, self.size))
+    }
+    fn hash_layout(&self, state: &mut iced_native::Hasher) {
+         use std::hash::Hash;
+
+        self.size.to_bits().hash(state)
+    }
+    fn draw(
+        &self,
+        _renderer: &mut Renderer<B>,
+        _defaults: &Defaults,
+        layout: Layout<'_>,
+        _cursor_position: Point,
+        _viewport: &Rectangle,
+    ) -> (Primitive, mouse::Interaction) {
+        let mut primitives: Vec<Primitive> = Vec::new();
+        primitives.push(
+            Primitive::Quad {
+                bounds: layout.bounds(),
+                background: Background::Color(Color::BLACK),
+                border_radius: self.border_rad,
+                border_width: 5.0,
+                border_color: Color::new(0.204, 0.204, 0.204, 1.0),
+            });
+        primitives.push(
+            Primitive::Text {
+                content: self.key.clone(),
+                bounds: layout.bounds(),
+                color: Color::WHITE,
+                size: self.size / 2.0,
+                font: self.font,
+                horizontal_alignment: HorizontalAlignment::Center,
+                vertical_alignment: VerticalAlignment::Center,
+            }
+        );
+        (Primitive::Group {
+            primitives: primitives
+        }, mouse::Interaction::Idle)
+    }
+}
+
+impl<'a, Message, B> Into<iced_native::Element<'a, Message, Renderer<B>>> for KeyWidget
+where
+    B: Backend,
+{
+    fn into(self) -> iced_native::Element<'a, Message, Renderer<B>> {
+        iced_native::Element::new(self)
+    }
+}

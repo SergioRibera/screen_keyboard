@@ -6,17 +6,17 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Clone)]
 pub struct StyleKeyboard {
     #[serde(default)]
-    pub bgColor: String,
+    pub bg_color: String,
     #[serde(default)]
-    pub keyColor: String,
+    pub key_color: String,
     #[serde(default)]
-    pub keyPressedColor: String,
+    pub key_pressed_color: String,
     #[serde(default)]
-    pub keyBorderColor: String,
+    pub key_border_color: String,
     #[serde(default)]
-    pub keyBorderRadius: f32,
+    pub key_border_radius: f32,
     #[serde(default)]
-    pub keySize: f32,
+    pub key_size: f32,
 }
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Layer {
@@ -30,11 +30,11 @@ pub struct DataLoad {
     #[serde(default)]
     pub name: String,
     #[serde(default)]
-    pub vendorID: u16,
+    pub vendor_id: u16,
     #[serde(default)]
-    pub productID: u16,
+    pub product_id: u16,
     #[serde(default)]
-    pub styleKeyboard: StyleKeyboard,
+    pub style_keyboard: StyleKeyboard,
     #[serde(default)]
     pub opacity: f32,
     #[serde(default)]
@@ -58,12 +58,12 @@ impl Default for Layer {
 impl Default for StyleKeyboard {
     fn default() -> Self {
         StyleKeyboard {
-            bgColor: "#ffffff".to_string(),
-            keyColor: "#ccc".to_string(),
-            keyPressedColor: "#919191".to_string(),
-            keyBorderColor: "#414141".to_string(),
-            keyBorderRadius: 5.0,
-            keySize: 10.0
+            bg_color: "#ffffff".to_string(),
+            key_color: "#ccc".to_string(),
+            key_pressed_color: "#919191".to_string(),
+            key_border_color: "#414141".to_string(),
+            key_border_radius: 5.0,
+            key_size: 10.0
         }
     }
 }
@@ -71,9 +71,9 @@ impl Default for DataLoad {
     fn default() -> Self {
         DataLoad {
             name: "Unknown".to_string(),
-            productID: 0,
-            vendorID: 0,
-            styleKeyboard: StyleKeyboard::default(),
+            product_id: 0,
+            vendor_id: 0,
+            style_keyboard: StyleKeyboard::default(),
             opacity: 0.6,
             layers: Vec::new(),
             split: false,
