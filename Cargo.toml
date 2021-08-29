@@ -8,9 +8,12 @@ authors = [ "SergioRibera" ]
 [dependencies]
 dirs = "3.0"
 css-color-parser = "*"
+hidapi = "0.5.0"
 # lazy_static = "1.4.0"
 indexmap = { version = "1.7.0", features = ["serde"] }
 iced = "0.3" # new interface
+iced_native = "0.4"
+iced_graphics = "0.2.0"
 # fltk = { version = "^1.1", git = "https://github.com/fltk-rs/fltk-rs", features = ["fltk-bundled"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
