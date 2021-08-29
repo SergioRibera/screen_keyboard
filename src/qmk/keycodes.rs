@@ -1,3 +1,6 @@
+#![allow(non_camel_case_types)]
+#![allow(dead_code)]
+
 use std::cmp::PartialEq;
 use std::fmt::{ Debug, Display, Result, Formatter };
 
