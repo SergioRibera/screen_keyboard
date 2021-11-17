@@ -3,12 +3,12 @@
 pub mod styles;
 
 use crate::utils::read_user_from_file;
-use crate::structs::DataLoad;
+use crate::structs::{ DataLoad, StyleKeyboard };
 use styles::*;
 use iced::{ Background, Color, VerticalAlignment, HorizontalAlignment };
 use iced::{ executor, Font, Length, Application, Clipboard, Command, Element, Column, Row, Text, Align, Container, widget::Space };
 
-// use css_color_parser::Color as CssColor;
+use css_color_parser::Color as CssColor;
 
 pub enum MainState {
 }
@@ -19,12 +19,14 @@ pub struct MainApp {
     height_app: u32,
     margin: u16,
     main_font: Font,
-    color: Color,
-    border_color: Color,
-    pressed_color: Color,
+    background: Color,
+    style: KeyStyle
 }
 #[derive(Debug, Clone, Copy)]
-pub enum Message { }
+pub enum Message {
+    KeyPress,
+    KeyRelease
+}
 
 impl Application for MainApp {
     type Executor = executor::Default;
@@ -40,9 +42,11 @@ impl Application for MainApp {
                 (data.style_keyboard.key_size * margin) as u32 * data.rows
             };
         let height_app = (data.style_keyboard.key_size * margin) as u32;
-        // let color: CssColor = data.styleKeyboard.keyColor.parse::<CssColor>().unwrap();
-        // let border_color: CssColor = data.styleKeyboard.keyBorderColor.parse::<CssColor>().unwrap();
-        // let pressed_color: CssColor = data.styleKeyboard.keyPressedColor.parse::<CssColor>().unwrap();
+        let bg: CssColor = data.style_keyboard.bg_color.parse::<CssColor>().unwrap();
+        let key_bg: CssColor = data.style_keyboard.key_bg_color.parse::<CssColor>().unwrap();
+        let color: CssColor = data.style_keyboard.key_color.parse::<CssColor>().unwrap();
+        let border_color: CssColor = data.style_keyboard.key_border_color.parse::<CssColor>().unwrap();
+        let pressed_color: CssColor = data.style_keyboard.key_pressed_color.parse::<CssColor>().unwrap();
         (MainApp {
             main_data: data.clone(),
             key_size: data.style_keyboard.key_size,
@@ -53,9 +57,15 @@ impl Application for MainApp {
                 name: "Icons",
                 bytes: include_bytes!("../../assets/DejaVuSans.ttf"),
             },
-            color: Color::new(1.0, 1.0, 1.0, 1.0),
-            border_color: Color::new(0.0, 0.0, 0.0, 1.0),
-            pressed_color: Color::new(0.4, 0.4, 0.4, 1.0),
+            background: Color::new((bg.r / 255) as f32, (bg.g / 255) as f32, (bg.b / 255) as f32, data.opacity),
+            style: KeyStyle {
+                back: Background::from(Color::new((key_bg.r / 255) as f32, (key_bg.g / 255) as f32, (key_bg.b / 255) as f32, key_bg.a / 255.0)),
+                fore: Color::new((color.r / 255) as f32, (color.g / 255) as f32, (color.b / 255) as f32, color.a / 255.0),
+                border_rad: data.style_keyboard.key_border_radius,
+                border_width: 2.0,
+                border_col: Color::new((border_color.r / 255) as f32, (border_color.g / 255) as f32, (border_color.b / 255) as f32, border_color.a / 255.0),
+                press_col: Color::new((pressed_color.r / 255) as f32, (pressed_color.g / 255) as f32, (pressed_color.b / 255) as f32, pressed_color.a / 255.0),
+            },
         }, Command::none())
     }
 
@@ -63,7 +73,7 @@ impl Application for MainApp {
         String::from("ScreenKeyboard")
     }
     fn background_color(&self) -> Color {
-        Color::new(1.0, 1.0, 1.0, self.main_data.opacity)
+        self.background
         // Read Bg Color from json
     }
 
@@ -109,8 +119,8 @@ impl Application for MainApp {
                     curr_col = 0;
                 }
                 if key != "KC_NO" {
-                    //row = generate_key(row, key.clone(), self.main_font, self.color, self.main_data.style_keyboard.key_border_radius);
-                    row = row.push(KeyWidget::new(key.clone(), self.main_font, self.color, self.main_data.style_keyboard.key_border_radius, self.main_data.style_keyboard.key_size));
+                    // row = generate_key(row, key.clone(), self.main_font, self.style);
+                    row = row.push(KeyWidget::new(key.clone(), self.main_font, self.style, self.key_size));
                     println!("key: {:?}", key);
                 } else {
                     row = row.push(generate_space());
@@ -123,26 +133,20 @@ impl Application for MainApp {
     }
 }
 
-fn generate_key(row: Row<Message>, key: String, font: Font, txt_color: Color, border_rad: f32) -> Row<Message> {
+fn generate_key(row: Row<Message>, key: String, font: Font, style: KeyStyle) -> Row<Message> {
     let txt = Text::new(key)
                 .font(font)
                 .width(Length::Fill)
                 .vertical_alignment(VerticalAlignment::Center)
                 .horizontal_alignment(HorizontalAlignment::Center)
-                .color(txt_color);
+                .color(Color::BLACK);
     row.push(Container::new(txt)
                 .padding(10)
                 .width(Length::Fill)
                 .height(Length::Shrink)
                 .align_x(Align::Center)
                 .align_y(Align::Center)
-                .style(KeyStyle {
-                    back: Background::Color(Color::from_rgb(0.252, 0.252, 0.252)),
-                    fore: Color::BLACK,
-                    border_rad: border_rad,
-                    border_with: 5.0,
-                    border_col: Color::new(0.204, 0.204, 0.204, 1.0)
-                }))
+                .style(style))
 }
 
 pub fn generate_space() -> Space {
@@ -152,6 +156,8 @@ pub fn generate_space() -> Space {
 
 use iced_graphics::{Backend, Defaults, Primitive, Renderer};
 use iced_native::{
+    event::Status, event::Event,
+    keyboard::KeyCode, keyboard::Modifiers,
     layout, mouse, Hasher, Layout,
     Point, Rectangle, Size, Widget,
 };
@@ -159,25 +165,23 @@ use iced_native::{
 pub struct KeyWidget {
     key: String,
     font: Font,
-    txt_color: Color,
-    border_rad: f32,
+    style: KeyStyle,
     size: f32
 }
 
 impl KeyWidget {
-    pub fn new(key: String, font: Font, txt_color: Color, border_rad: f32, size: f32) -> Self {
+    pub fn new(key: String, font: Font, style: KeyStyle, size: f32) -> Self {
         Self {
             key: key,
             font: font,
-            txt_color: txt_color,
-            border_rad: border_rad,
+            style: style,
             size: size
         }
     }
 }
 
 impl<Message, B> Widget<Message, Renderer<B>> for KeyWidget
-where B: Backend{
+where B: Backend {
     fn width(&self) -> iced::Length { Length::Fill }
     fn height(&self) -> iced::Length { Length::Shrink }
     fn layout(&self, _: &Renderer<B>, _: &iced_native::layout::Limits) -> iced_native::layout::Node {
@@ -200,16 +204,16 @@ where B: Backend{
         primitives.push(
             Primitive::Quad {
                 bounds: layout.bounds(),
-                background: Background::Color(Color::BLACK),
-                border_radius: self.border_rad,
-                border_width: 5.0,
-                border_color: Color::new(0.204, 0.204, 0.204, 1.0),
+                background: self.style.back,
+                border_radius: self.style.border_rad,
+                border_width: self.style.border_width,
+                border_color: self.style.border_col,
             });
         primitives.push(
             Primitive::Text {
                 content: self.key.clone(),
                 bounds: layout.bounds(),
-                color: Color::WHITE,
+                color: self.style.fore,
                 size: self.size / 2.0,
                 font: self.font,
                 horizontal_alignment: HorizontalAlignment::Center,
@@ -219,6 +223,24 @@ where B: Backend{
         (Primitive::Group {
             primitives: primitives
         }, mouse::Interaction::Idle)
+    }
+    fn on_event(
+        &mut self, event: Event,
+        _layout: Layout<'_>, _cursor_position: Point,
+        _renderer: &Renderer<B>, _clipboard: &mut dyn iced_native::Clipboard,
+        messages: &mut Vec<Message>,) -> Status {
+        let key: char = self.key.as_str().chars().next().unwrap();
+        match event {
+            Event::Keyboard(iced::keyboard::Event::CharacterReceived(key_char)) if !key_char.is_control() => {
+                if key == key_char {
+                    messages.push(Some("KeyPress".clone()));
+                }
+                Status::Captured
+            },
+            _ => {
+                Status::Ignored
+            }
+        }
     }
 }
 

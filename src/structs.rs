@@ -8,6 +8,8 @@ pub struct StyleKeyboard {
     #[serde(default)]
     pub bg_color: String,
     #[serde(default)]
+    pub key_bg_color: String,
+    #[serde(default)]
     pub key_color: String,
     #[serde(default)]
     pub key_pressed_color: String,
@@ -59,7 +61,8 @@ impl Default for StyleKeyboard {
     fn default() -> Self {
         StyleKeyboard {
             bg_color: "#ffffff".to_string(),
-            key_color: "#ccc".to_string(),
+            key_bg_color: "#ccc".to_string(),
+            key_color: "#000".to_string(),
             key_pressed_color: "#919191".to_string(),
             key_border_color: "#414141".to_string(),
             key_border_radius: 5.0,
